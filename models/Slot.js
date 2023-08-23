@@ -2,8 +2,13 @@ const mongoose = require('mongoose')
 
 const slotSchema = mongoose.Schema(
     {
-        student_id: { type: String },
-        dean_id: { type: String, required: true },
+        dean_id: {
+            type: String,
+            required: true,
+        },
+        student_id: {
+            type: String,
+        },
         time: { type: Date, required: true },
         alloted: { type: Boolean, required: true },
     },

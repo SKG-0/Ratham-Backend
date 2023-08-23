@@ -1,5 +1,6 @@
 require('dotenv').config()
 const Slot = require('../models/Slot')
+const User = require('../models/User')
 //checking for thursday or friday
 const isThursdayOrFriday = (date) => {
     return date.getDay() === 4 || date.getDay() === 5 // 4 for Thursday, 5 for Friday
@@ -10,6 +11,16 @@ const addSlot = async (req, res) => {
         const { dean_id, time } = req.query
         const date = new Date(time)
         if (isThursdayOrFriday(date)) {
+            //checking if a dean exists with the id
+            const checkDean = await User.findOne({
+                user_id: dean_id,
+                userType: 'Dean',
+            })
+            if (!checkDean) {
+                return res.json({
+                    message: 'No dean found.',
+                })
+            }
             //checking for same slots
             const checkSameSlot = await Slot.findOne({
                 dean_id: dean_id,
@@ -45,8 +56,21 @@ const addSlot = async (req, res) => {
 const getSlotDean = async (req, res) => {
     try {
         const { dean_id } = req.query
-        //show slots booked by students
-        const slots = await Slot.find({ dean_id: dean_id, alloted: true })
+        //checking if a dean exists with the id
+        const checkDean = await User.findOne({
+            user_id: dean_id,
+            userType: 'Dean',
+        })
+        if (!checkDean) {
+            return res.json({
+                message: 'No dean found.',
+            })
+        }
+        //show slots booked by students for dean
+        const slots = await Slot.find({
+            dean_id: dean_id,
+            alloted: true,
+        })
         const date = new Date()
         const filteredSlots = slots.filter((slot) => {
             const slotDate = new Date(slot.time)
@@ -89,6 +113,26 @@ const getSlotStudent = async (req, res) => {
 const bookSlot = async (req, res) => {
     try {
         const { student_id, dean_id, time } = req.query
+        //checking a valid dean
+        const checkDean = await User.findOne({
+            user_id: dean_id,
+            userType: 'Dean',
+        })
+        if (!checkDean) {
+            return res.json({
+                message: 'No dean found.',
+            })
+        }
+        //checking a valid student
+        const checkStudent = await User.findOne({
+            user_id: student_id,
+            userType: 'Student',
+        })
+        if (!checkStudent) {
+            return res.json({
+                message: 'No student found.',
+            })
+        }
         //find a slot in which dean is available
         const slot = await Slot.findOne({
             dean_id: dean_id,

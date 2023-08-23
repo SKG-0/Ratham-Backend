@@ -1,19 +1,18 @@
 require('dotenv').config()
-const Dean = require('../models/Dean')
 const bcrypt = require('bcryptjs')
-// const JWT_SECRET =
-//     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c'
+const User = require('../models/User')
 const JWT_SECRET = process.env.JWT_SECRET
 const jwt = require('jsonwebtoken')
 //register a dean
 const registerDean = async (req, res) => {
     try {
-        const { name, email, pass, dean_id } = req.query
-        //checking if a dean already exists with same name,email and dean_id
-        const checkDean = await Dean.findOne({
+        const { name, email, pass, user_id, userType } = req.query
+        //checking if a dean already exists with same name,email and user_id
+        const checkDean = await User.findOne({
             name: name,
             email: email,
-            dean_id: dean_id,
+            user_id: user_id,
+            userType: 'Dean',
         })
         if (checkDean) {
             return res.json({ message: 'Dean exists' })
@@ -21,11 +20,12 @@ const registerDean = async (req, res) => {
         //encrypting password
         const salt = await bcrypt.genSalt(10)
         const securePass = await bcrypt.hash(pass, salt)
-        const dean = await Dean.create({
-            dean_id: dean_id,
+        const dean = await User.create({
+            user_id: user_id,
             name: name,
             email: email,
             pass: securePass,
+            userType: 'Dean',
         })
         if (!dean) {
             return res.json({
@@ -40,9 +40,9 @@ const registerDean = async (req, res) => {
 //Dean login
 const loginDean = async (req, res) => {
     try {
-        const { dean_id, pass } = req.query
-        //check for dean
-        const dean = await Dean.findOne({ dean_id })
+        const { user_id, pass, userType } = req.query
+        //check for dean type and user_id
+        const dean = await User.findOne({ user_id: user_id, userType: 'Dean' })
         if (!dean) {
             return res.json({
                 message: 'No account found.',
@@ -57,7 +57,8 @@ const loginDean = async (req, res) => {
         }
         const data = {
             dean: {
-                dean_id: dean.dean_id,
+                user_id: dean.user_id,
+                userType: 'Dean',
             },
         }
         //generating auth token
@@ -74,9 +75,12 @@ const loginDean = async (req, res) => {
 //get details of a dean
 const getDean = async (req, res) => {
     try {
-        const id = req.dean.dean_id
-        //check for dean with dean_id
-        const dean = await Dean.findOne({ dean_id: id }).select('-pass')
+        const { user_id, userType } = req.query
+        //check for dean with user_id
+        const dean = await User.findOne({
+            user_id: user_id,
+            userType: 'Dean',
+        }).select('-pass')
         if (!dean) {
             return res.json({ message: 'No dean found' })
         }

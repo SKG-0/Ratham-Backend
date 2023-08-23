@@ -1,31 +1,31 @@
 require('dotenv').config()
-const Student = require('../models/Student')
 const bcrypt = require('bcryptjs')
-// const JWT_SECRET =
-//     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c'
 const JWT_SECRET = process.env.JWT_SECRET
 const jwt = require('jsonwebtoken')
+const User = require('../models/User')
 //register a student
 const registerStudent = async (req, res) => {
     try {
-        const { name, pass, email, student_id } = req.query
+        const { name, pass, email, user_id, userType } = req.query
         //check for an existing student
-        const checkStudent = await Student.findOne({
-            student_id: student_id,
+        const checkStudent = await User.findOne({
+            user_id: user_id,
+            userType: 'Student',
         })
         if (checkStudent) {
             return res.json({
-                message: 'Account already exists',
+                message: 'Student already exists',
             })
         }
         //encrypting password
         const salt = await bcrypt.genSalt(10)
         const securePass = await bcrypt.hash(pass, salt)
-        const student = await Student.create({
-            student_id: student_id,
+        const student = await User.create({
+            user_id: user_id,
             email: email,
             name: name,
             pass: securePass,
+            userType: 'Student',
         })
 
         if (!student) {
@@ -42,9 +42,12 @@ const registerStudent = async (req, res) => {
 //student login
 const loginStudent = async (req, res) => {
     try {
-        const { student_id, pass } = req.query
-        //check for an account with student_id
-        const student = await Student.findOne({ student_id: student_id })
+        const { user_id, pass } = req.query
+        //check for an account with user_id and student type
+        const student = await User.findOne({
+            user_id: user_id,
+            userType: 'Student',
+        })
         if (!student) {
             return res.json({
                 message: 'Account does not exist.',
@@ -59,7 +62,8 @@ const loginStudent = async (req, res) => {
         }
         const data = {
             student: {
-                student_id: student.student_id,
+                user_id: student.user_id,
+                userType: 'Student',
             },
         }
         const authToken = jwt.sign(data, JWT_SECRET)
@@ -75,9 +79,10 @@ const loginStudent = async (req, res) => {
 //get student data
 const getStudent = async (req, res) => {
     try {
-        const student_id = req.student.student_id
-        const student = await Student.findOne({
-            student_id: student_id,
+        const { user_id, userType } = req.query
+        const student = await User.findOne({
+            user_id: user_id,
+            userType: 'Student',
         }).select('-pass')
         if (!student) {
             return res.json({ message: 'Student not found.' })

@@ -1,8 +1,6 @@
 const express = require('express')
 const router = express.Router()
 const slotController = require('../controllers/slotController')
-// const getStudent = require('../middlewares/getStudent')
-// const getDean = require('../middlewares/getDean')
 const { student, dean } = require('../middlewares/middleware')
 
 router.post('/add', dean, slotController.addSlot)
